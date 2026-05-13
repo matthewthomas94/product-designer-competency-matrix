@@ -6,6 +6,7 @@ export interface Gap {
   competency: Competency;
   expectedLevel: Level;
   userLevel: Level;
+  expectedBullets: string[];
 }
 
 interface Props {
@@ -25,22 +26,22 @@ export function GapsTable({ gaps, notes, onChange }: Props) {
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-slate-100 text-left">
-            <th className="border border-slate-300 px-3 py-2 font-semibold w-[20%]">
+            <th className="border border-slate-300 px-3 py-2 font-semibold w-[18%]">
               Capability
             </th>
-            <th className="border border-slate-300 px-3 py-2 font-semibold w-[12%]">
+            <th className="border border-slate-300 px-3 py-2 font-semibold w-[22%]">
               Level expected
             </th>
-            <th className="border border-slate-300 px-3 py-2 font-semibold w-[34%]">
+            <th className="border border-slate-300 px-3 py-2 font-semibold w-[30%]">
               How you demonstrated this competency
             </th>
-            <th className="border border-slate-300 px-3 py-2 font-semibold w-[34%]">
+            <th className="border border-slate-300 px-3 py-2 font-semibold w-[30%]">
               Metric / KPI it contributed to improving
             </th>
           </tr>
         </thead>
         <tbody>
-          {gaps.map(({ competency, expectedLevel }) => {
+          {gaps.map(({ competency, expectedLevel, expectedBullets }) => {
             const note = notes[competency.id] ?? {};
             return (
               <tr key={competency.id} className="align-top">
@@ -53,12 +54,24 @@ export function GapsTable({ gaps, notes, onChange }: Props) {
                   </div>
                 </td>
                 <td className="border border-slate-300 px-3 py-2">
-                  <span className="font-mono text-slate-500 mr-1">
-                    {expectedLevel}
-                  </span>
-                  <span className="font-semibold">
-                    {LEVEL_LABELS[expectedLevel]}
-                  </span>
+                  <div>
+                    <span className="font-mono text-slate-500 mr-1">
+                      {expectedLevel}
+                    </span>
+                    <span className="font-semibold">
+                      {LEVEL_LABELS[expectedLevel]}
+                    </span>
+                  </div>
+                  {expectedBullets.length > 0 && (
+                    <ul className="mt-2 space-y-1 text-xs text-slate-600 leading-snug">
+                      {expectedBullets.map((point, i) => (
+                        <li key={i} className="flex gap-1.5">
+                          <span className="text-slate-400">•</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </td>
                 <td className="border border-slate-300 p-0">
                   <textarea

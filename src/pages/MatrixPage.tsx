@@ -267,7 +267,9 @@ export function MatrixPage({ mode }: Props) {
     const userLevel = (profile.ratings[c.id] ?? 0) as Level;
     const expectedLevel = (expectations[c.id] ?? 0) as Level;
     if (expectedLevel <= userLevel) return [];
-    return [{ competency: c, expectedLevel, userLevel }];
+    const expectedRole = ROLES[expectedLevel - 1];
+    const expectedBullets = resolveDescriptions(c.id)[expectedRole];
+    return [{ competency: c, expectedLevel, userLevel, expectedBullets }];
   });
 
   const exportToday = new Date().toLocaleDateString(undefined, {
