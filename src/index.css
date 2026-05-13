@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+:root {
+  --user: #2563eb;
+  --expected: #0f172a;
+  --gap: #f97316;
+  --cell-empty: #f1f5f9;
+  --cell-stroke: #ffffff;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Suppress the default focus rectangle on SVG cells. Keyboard users still
+   get a visible indicator via :focus-visible (mouse clicks don't trigger it). */
+svg path[role="button"]:focus {
+  outline: none;
+}
+svg path[role="button"]:focus-visible {
+  outline: 2px dashed #0f172a;
+  outline-offset: 1px;
+}
+
+/* Print-only elements are hidden on screen by default. */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* Hide all interactive controls and on-screen-only chrome. */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Show print-only annotations. */
+  .print-only {
+    display: block;
+  }
+
+  /* Clean white background, no shadows. */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* The wheel column becomes full width once the side panel is hidden. */
+  .matrix-row {
+    display: block !important;
+  }
+
+  /* Keep the SVG on the first page; don't let it split. */
+  svg {
+    max-width: 620px !important;
+    margin: 0 auto;
+    page-break-inside: avoid;
+  }
+
+  /* Force the Growth Plan onto its own page. */
+  .growth-plan {
+    page-break-before: always;
+    margin-top: 0 !important;
+  }
+
+  /* Textareas should print as bordered boxes that read as writable cells. */
+  textarea.gap-textarea {
+    border: none !important;
+    box-shadow: none !important;
+    resize: none;
+    min-height: 80px;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  /* Avoid splitting a gap row across pages. */
+  .gaps-table tr {
+    page-break-inside: avoid;
+  }
+
+  /* Tighten the role meta strip for print. */
+  .role-meta {
+    page-break-inside: avoid;
+  }
+
+  /* Default link colour stays readable when printed. */
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #fafafa;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
