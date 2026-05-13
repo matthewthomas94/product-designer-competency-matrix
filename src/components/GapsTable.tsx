@@ -73,22 +73,20 @@ export function GapsTable({ gaps, notes, onChange }: Props) {
                     </ul>
                   )}
                 </td>
-                <td className="border border-slate-300 p-0">
+                <td className="border border-slate-300 p-0 relative align-top min-h-[80px]">
                   <textarea
-                    className="gap-textarea w-full px-3 py-2 bg-transparent resize-y min-h-[72px] focus:outline-none focus:ring-2 focus:ring-slate-400 rounded-none"
+                    className="gap-textarea absolute inset-0 w-full h-full px-3 py-2 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-slate-400 rounded-none"
                     placeholder="Describe how you demonstrated this competency…"
                     value={note.evidence ?? ""}
                     onChange={handle(competency.id, "evidence")}
-                    rows={3}
                   />
                 </td>
-                <td className="border border-slate-300 p-0">
+                <td className="border border-slate-300 p-0 relative align-top min-h-[80px]">
                   <textarea
-                    className="gap-textarea w-full px-3 py-2 bg-transparent resize-y min-h-[72px] focus:outline-none focus:ring-2 focus:ring-slate-400 rounded-none"
+                    className="gap-textarea absolute inset-0 w-full h-full px-3 py-2 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-slate-400 rounded-none"
                     placeholder="Which metric or KPI did this contribute to?"
                     value={note.kpi ?? ""}
                     onChange={handle(competency.id, "kpi")}
-                    rows={3}
                   />
                 </td>
               </tr>
