@@ -67,7 +67,7 @@ export interface Competency {
   descriptions: Record<Role, string[]>;
 }
 
-// At Pay's current size — descriptors that frame the role beyond capabilities.
+// Descriptors that frame the role beyond capabilities.
 export interface RoleMeta {
   headline: string;
   scope: string;

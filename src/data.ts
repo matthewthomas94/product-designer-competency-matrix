@@ -51,7 +51,7 @@ export const COMPETENCIES: Competency[] = [
     area: "craft",
     descriptions: {
       junior: [
-        "Designs interfaces that follow established Pay patterns and design system components, with guidance on when to apply them.",
+        "Designs interfaces that follow established product patterns and design system components, with guidance on when to apply them.",
         "Builds familiarity with layout, hierarchy, interaction patterns, and accessibility fundamentals (WCAG AA basics).",
         "Uses prototypes to clarify flows; receives feedback on fidelity and edge cases.",
         "Work is reviewed by a senior before ship; learns from feedback.",
@@ -173,7 +173,7 @@ export const COMPETENCIES: Competency[] = [
         "Communicates clearly within team and discipline; documents work transparently.",
         "Collaborates cooperatively in their pod; pairs with peers and senior designers.",
         "Resolves design feedback with guidance; seeks help when stuck.",
-        "Builds understanding of how design works within Pay and the broader business.",
+        "Builds understanding of how design works within the company and the broader business.",
       ],
       mid: [
         "Collaborates effectively across disciplines (PM, EM, Engineering, Marketing, Ops).",
@@ -264,7 +264,7 @@ export const DEFINITIONS: import("./types").Definition[] = [
   {
     term: "Domain",
     description:
-      "A coherent product area of pay.com.au — e.g. Payments & Checkout, Rewards & Redemption, Get Paid, Onboarding, Approvals & Multi-user, Mobile. The Lead role is scoped to a single domain.",
+      "A coherent product area within the business — e.g. Payments, Rewards, Onboarding, Mobile. The Lead role is scoped to a single domain.",
   },
   {
     term: "Complex problem",

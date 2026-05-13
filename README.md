@@ -1,8 +1,8 @@
 # Product Designer Competency Matrix
 
-An interactive radial competency matrix for Pay's Product Design team — four levels (Junior, Mid, Senior, Lead) across seven capabilities. Rate yourself, see gaps versus role expectations, export a growth plan.
+An interactive radial competency matrix for a Product Design team — four levels (Junior, Mid, Senior, Lead) across seven capabilities. Rate yourself, see gaps versus role expectations, export a growth plan.
 
-Based on the *Product Design Competency Matrix · Draft v1* (May 2026) authored at pay.com.au.
+Based on an internal Product Design Competency Matrix draft (May 2026).
 
 ## Capabilities
 

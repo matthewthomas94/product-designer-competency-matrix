@@ -292,7 +292,7 @@ export function MatrixPage({ mode }: Props) {
         <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="text-xs uppercase tracking-wide text-slate-500">
-              Product Design · Draft v1 · pay.com.au
+              Product Design · Draft v1
             </div>
             <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 mt-1">
               {mode === "define"
@@ -452,7 +452,7 @@ export function MatrixPage({ mode }: Props) {
         <section className="no-print mt-16 max-w-3xl">
           <h2 className="text-lg font-semibold text-slate-900">Definitions</h2>
           <p className="text-sm text-slate-600 mt-1">
-            Terms in this matrix that have a specific meaning at Pay.
+            Terms in this matrix with a specific in-context meaning.
           </p>
           <dl className="mt-4 space-y-3">
             {DEFINITIONS.map(({ term, description }) => (
