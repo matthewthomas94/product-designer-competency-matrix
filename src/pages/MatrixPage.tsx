@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import type {
   CompetencyId,
+  CustomRoleMeta,
   Level,
   Mode,
   Role,
+  RoleMeta,
   UserProfile,
 } from "../types";
 import { ROLES, ROLE_LABELS } from "../types";
@@ -18,7 +20,6 @@ import { RoleSwitcher } from "../components/RoleSwitcher";
 import { Legend } from "../components/Legend";
 import { CapabilityDetail } from "../components/CapabilityDetail";
 import { CellHoverCard } from "../components/CellHoverCard";
-import { DefinitionsEditor } from "../components/DefinitionsEditor";
 import { GapsTable, type Gap } from "../components/GapsTable";
 
 const STORAGE_KEY = "competency-matrix:v2";
@@ -51,21 +52,16 @@ function loadProfile(): UserProfile {
       parsed.gapNotes && typeof parsed.gapNotes === "object"
         ? (parsed.gapNotes as UserProfile["gapNotes"])
         : undefined;
-    const customDefinitions = Array.isArray(parsed.customDefinitions)
-      ? parsed.customDefinitions.filter(
-          (d): d is { term: string; description: string } =>
-            !!d &&
-            typeof d === "object" &&
-            typeof (d as { term?: unknown }).term === "string" &&
-            typeof (d as { description?: unknown }).description === "string",
-        )
-      : undefined;
+    const customRoleMeta =
+      parsed.customRoleMeta && typeof parsed.customRoleMeta === "object"
+        ? (parsed.customRoleMeta as CustomRoleMeta)
+        : undefined;
     return {
       selectedRole: role,
       ratings,
       customExpectations,
       gapNotes,
-      customDefinitions,
+      customRoleMeta,
     };
   } catch {
     return defaultProfile;
@@ -145,50 +141,23 @@ export function MatrixPage({ mode }: Props) {
   };
   const handleCellLeave = () => setHovered(null);
 
-  const setDefinition = (
-    idx: number,
-    field: "term" | "description",
-    value: string,
-  ) =>
+  const setRoleMetaField = (field: keyof RoleMeta, value: string) =>
     setProfile((p) => {
-      const current = p.customDefinitions ?? DEFINITIONS;
-      const next = current.map((d, i) =>
-        i === idx ? { ...d, [field]: value } : { ...d },
-      );
-      return { ...p, customDefinitions: next };
+      const role = p.selectedRole;
+      const baseline = ROLE_META[role][field];
+      const existing = p.customRoleMeta?.[role] ?? {};
+      const nextForRole: Partial<RoleMeta> = { ...existing, [field]: value };
+      // Drop the override when it matches the baseline so storage stays tidy.
+      if (value === baseline) delete nextForRole[field];
+      const allCustom: CustomRoleMeta = { ...p.customRoleMeta };
+      if (Object.keys(nextForRole).length === 0) {
+        delete allCustom[role];
+      } else {
+        allCustom[role] = nextForRole;
+      }
+      const next = Object.keys(allCustom).length === 0 ? undefined : allCustom;
+      return { ...p, customRoleMeta: next };
     });
-
-  const addDefinition = () =>
-    setProfile((p) => {
-      const current = p.customDefinitions ?? DEFINITIONS;
-      return {
-        ...p,
-        customDefinitions: [
-          ...current.map((d) => ({ ...d })),
-          { term: "", description: "" },
-        ],
-      };
-    });
-
-  const removeDefinition = (idx: number) =>
-    setProfile((p) => {
-      const current = p.customDefinitions ?? DEFINITIONS;
-      return {
-        ...p,
-        customDefinitions: current
-          .filter((_, i) => i !== idx)
-          .map((d) => ({ ...d })),
-      };
-    });
-
-  const resetDefinitions = () => {
-    if (!profile.customDefinitions) return;
-    if (
-      window.confirm("Reset the glossary back to the original definitions?")
-    ) {
-      setProfile((p) => ({ ...p, customDefinitions: undefined }));
-    }
-  };
 
   const setGapNote = (
     id: CompetencyId,
@@ -215,13 +184,17 @@ export function MatrixPage({ mode }: Props) {
   };
 
   const resetDefaults = () => {
-    if (!profile.customExpectations) return;
+    if (!profile.customExpectations && !profile.customRoleMeta) return;
     if (
       window.confirm(
-        "Reset all role definitions back to the original defaults? This affects every role.",
+        "Reset all role definitions (cell expectations and meta fields) back to the original defaults? This affects every role.",
       )
     ) {
-      setProfile((p) => ({ ...p, customExpectations: undefined }));
+      setProfile((p) => ({
+        ...p,
+        customExpectations: undefined,
+        customRoleMeta: undefined,
+      }));
     }
   };
 
@@ -230,16 +203,20 @@ export function MatrixPage({ mode }: Props) {
     ROLE_EXPECTATIONS[profile.selectedRole];
   const hasRatings = Object.keys(profile.ratings).length > 0;
   const hasCustomDefaults =
-    !!profile.customExpectations &&
-    Object.keys(profile.customExpectations).length > 0;
-  const definitions = profile.customDefinitions ?? DEFINITIONS;
+    (!!profile.customExpectations &&
+      Object.keys(profile.customExpectations).length > 0) ||
+    (!!profile.customRoleMeta &&
+      Object.keys(profile.customRoleMeta).length > 0);
 
   const selectedCapability =
     selectedCapabilityId
       ? COMPETENCIES.find((c) => c.id === selectedCapabilityId) ?? null
       : null;
 
-  const meta = ROLE_META[profile.selectedRole];
+  const meta: RoleMeta = {
+    ...ROLE_META[profile.selectedRole],
+    ...(profile.customRoleMeta?.[profile.selectedRole] ?? {}),
+  };
 
   const gaps: Gap[] = COMPETENCIES.flatMap((c) => {
     const userLevel = (profile.ratings[c.id] ?? 0) as Level;
@@ -279,7 +256,7 @@ export function MatrixPage({ mode }: Props) {
             </h1>
             <p className="no-print mt-2 text-slate-600 max-w-2xl text-sm leading-relaxed">
               {mode === "define"
-                ? "Pick a role, then click cells to override the expected level per capability. Defaults are uniform — a Mid is expected at the Mid column across every capability — but you can deviate here."
+                ? "Pick a role, then edit its meta strip (Headline, Scope, Ownership, etc.) and click cells to override the expected level per capability. Changes save automatically."
                 : "Four levels (Junior, Mid, Senior, Lead) across seven capabilities. Switch roles to see expectations, click cells to rate yourself, and click a capability label to read the full ladder."}
             </p>
             <p className="print-only text-xs text-slate-500 mt-2">
@@ -310,52 +287,75 @@ export function MatrixPage({ mode }: Props) {
         </div>
 
         <div className="role-meta mb-6 rounded-md border border-slate-200 bg-white px-4 py-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm">
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-slate-500">
-              {ROLE_LABELS[profile.selectedRole]} · Headline
+          {(
+            [
+              { key: "headline", label: "Headline", multiline: false },
+              { key: "scope", label: "Scope", multiline: false },
+              { key: "ownership", label: "Ownership", multiline: true },
+              {
+                key: "collaborators",
+                label: "Who they work with",
+                multiline: true,
+              },
+              {
+                key: "people",
+                label: "People responsibility",
+                multiline: true,
+              },
+              {
+                key: "experience",
+                label: "Indicative experience",
+                multiline: false,
+              },
+            ] as Array<{
+              key: keyof RoleMeta;
+              label: string;
+              multiline: boolean;
+            }>
+          ).map(({ key, label, multiline }) => (
+            <div key={key}>
+              <div className="text-[10px] uppercase tracking-wide text-slate-500">
+                {key === "headline"
+                  ? `${ROLE_LABELS[profile.selectedRole]} · Headline`
+                  : label}
+              </div>
+              {mode === "define" ? (
+                multiline ? (
+                  <textarea
+                    className="mt-1 w-full border border-slate-300 rounded-md px-2 py-1.5 text-xs leading-snug text-slate-700 resize-y focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    rows={2}
+                    value={meta[key]}
+                    onChange={(e) => setRoleMetaField(key, e.target.value)}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    className={
+                      "mt-1 w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 " +
+                      (key === "headline"
+                        ? "text-slate-900 font-medium"
+                        : "text-slate-900")
+                    }
+                    value={meta[key]}
+                    onChange={(e) => setRoleMetaField(key, e.target.value)}
+                  />
+                )
+              ) : (
+                <div
+                  className={
+                    "mt-0.5 " +
+                    (key === "headline"
+                      ? "text-slate-900 font-medium"
+                      : key === "scope"
+                        ? "text-slate-900"
+                        : "text-slate-700 text-xs leading-snug")
+                  }
+                >
+                  {meta[key]}
+                </div>
+              )}
             </div>
-            <div className="text-slate-900 font-medium mt-0.5">
-              {meta.headline}
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-slate-500">
-              Scope
-            </div>
-            <div className="text-slate-900 mt-0.5">{meta.scope}</div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-slate-500">
-              Ownership
-            </div>
-            <div className="text-slate-700 mt-0.5 text-xs leading-snug">
-              {meta.ownership}
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-slate-500">
-              Who they work with
-            </div>
-            <div className="text-slate-700 mt-0.5 text-xs leading-snug">
-              {meta.collaborators}
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-slate-500">
-              People responsibility
-            </div>
-            <div className="text-slate-700 mt-0.5 text-xs leading-snug">
-              {meta.people}
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-slate-500">
-              Indicative experience
-            </div>
-            <div className="text-slate-700 mt-0.5 text-xs leading-snug">
-              {meta.experience}
-            </div>
-          </div>
+          ))}
         </div>
 
         <div className="matrix-row grid lg:grid-cols-[1fr_280px] gap-8 items-start">
@@ -421,35 +421,20 @@ export function MatrixPage({ mode }: Props) {
         <section className="no-print mt-16 max-w-3xl">
           <h2 className="text-lg font-semibold text-slate-900">Definitions</h2>
           <p className="text-sm text-slate-600 mt-1">
-            {mode === "define"
-              ? "Edit, add, or remove glossary terms. Changes save automatically."
-              : "Terms in this matrix that have a specific meaning at Pay."}
+            Terms in this matrix that have a specific meaning at Pay.
           </p>
-          {mode === "define" ? (
-            <div className="mt-4">
-              <DefinitionsEditor
-                definitions={definitions}
-                onChange={setDefinition}
-                onAdd={addDefinition}
-                onRemove={removeDefinition}
-                onReset={resetDefinitions}
-                resetDisabled={!profile.customDefinitions}
-              />
-            </div>
-          ) : (
-            <dl className="mt-4 space-y-3">
-              {definitions.map(({ term, description }, idx) => (
-                <div key={`${term}-${idx}`}>
-                  <dt className="text-sm font-semibold text-slate-900">
-                    {term}
-                  </dt>
-                  <dd className="text-sm text-slate-700 mt-0.5 leading-relaxed">
-                    {description}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          )}
+          <dl className="mt-4 space-y-3">
+            {DEFINITIONS.map(({ term, description }) => (
+              <div key={term}>
+                <dt className="text-sm font-semibold text-slate-900">
+                  {term}
+                </dt>
+                <dd className="text-sm text-slate-700 mt-0.5 leading-relaxed">
+                  {description}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </section>
 
         <p className="no-print mt-12 text-xs text-slate-400">
