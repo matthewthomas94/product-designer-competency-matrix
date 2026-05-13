@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import type {
   CompetencyId,
-  CustomRoleMeta,
+  CustomDescriptions,
   Level,
   Mode,
   Role,
-  RoleMeta,
   UserProfile,
 } from "../types";
 import { ROLES, ROLE_LABELS } from "../types";
@@ -52,16 +51,16 @@ function loadProfile(): UserProfile {
       parsed.gapNotes && typeof parsed.gapNotes === "object"
         ? (parsed.gapNotes as UserProfile["gapNotes"])
         : undefined;
-    const customRoleMeta =
-      parsed.customRoleMeta && typeof parsed.customRoleMeta === "object"
-        ? (parsed.customRoleMeta as CustomRoleMeta)
+    const customDescriptions =
+      parsed.customDescriptions && typeof parsed.customDescriptions === "object"
+        ? (parsed.customDescriptions as CustomDescriptions)
         : undefined;
     return {
       selectedRole: role,
       ratings,
       customExpectations,
       gapNotes,
-      customRoleMeta,
+      customDescriptions,
     };
   } catch {
     return defaultProfile;
@@ -141,23 +140,59 @@ export function MatrixPage({ mode }: Props) {
   };
   const handleCellLeave = () => setHovered(null);
 
-  const setRoleMetaField = (field: keyof RoleMeta, value: string) =>
+  const updateBullets = (id: CompetencyId, role: Role, bullets: string[]) =>
     setProfile((p) => {
-      const role = p.selectedRole;
-      const baseline = ROLE_META[role][field];
-      const existing = p.customRoleMeta?.[role] ?? {};
-      const nextForRole: Partial<RoleMeta> = { ...existing, [field]: value };
-      // Drop the override when it matches the baseline so storage stays tidy.
-      if (value === baseline) delete nextForRole[field];
-      const allCustom: CustomRoleMeta = { ...p.customRoleMeta };
-      if (Object.keys(nextForRole).length === 0) {
-        delete allCustom[role];
+      const baseline =
+        COMPETENCIES.find((c) => c.id === id)?.descriptions[role] ?? [];
+      const matchesBaseline =
+        bullets.length === baseline.length &&
+        bullets.every((b, i) => b === baseline[i]);
+      const all: CustomDescriptions = { ...(p.customDescriptions ?? {}) };
+      const forCap = { ...(all[id] ?? {}) };
+      if (matchesBaseline) {
+        delete forCap[role];
       } else {
-        allCustom[role] = nextForRole;
+        forCap[role] = bullets;
       }
-      const next = Object.keys(allCustom).length === 0 ? undefined : allCustom;
-      return { ...p, customRoleMeta: next };
+      if (Object.keys(forCap).length === 0) {
+        delete all[id];
+      } else {
+        all[id] = forCap;
+      }
+      const next = Object.keys(all).length === 0 ? undefined : all;
+      return { ...p, customDescriptions: next };
     });
+
+  const setBullet = (
+    id: CompetencyId,
+    role: Role,
+    idx: number,
+    value: string,
+  ) => {
+    const current = resolveBullets(id, role);
+    const next = current.map((b, i) => (i === idx ? value : b));
+    updateBullets(id, role, next);
+  };
+
+  const addBullet = (id: CompetencyId, role: Role) => {
+    const current = resolveBullets(id, role);
+    updateBullets(id, role, [...current, ""]);
+  };
+
+  const removeBullet = (id: CompetencyId, role: Role, idx: number) => {
+    const current = resolveBullets(id, role);
+    updateBullets(
+      id,
+      role,
+      current.filter((_, i) => i !== idx),
+    );
+  };
+
+  function resolveBullets(id: CompetencyId, role: Role): string[] {
+    const override = profile.customDescriptions?.[id]?.[role];
+    if (override) return override;
+    return COMPETENCIES.find((c) => c.id === id)?.descriptions[role] ?? [];
+  }
 
   const setGapNote = (
     id: CompetencyId,
@@ -184,16 +219,16 @@ export function MatrixPage({ mode }: Props) {
   };
 
   const resetDefaults = () => {
-    if (!profile.customExpectations && !profile.customRoleMeta) return;
+    if (!profile.customExpectations && !profile.customDescriptions) return;
     if (
       window.confirm(
-        "Reset all role definitions (cell expectations and meta fields) back to the original defaults? This affects every role.",
+        "Reset all role definitions (cell expectations and bullet descriptions) back to the original defaults? This affects every role.",
       )
     ) {
       setProfile((p) => ({
         ...p,
         customExpectations: undefined,
-        customRoleMeta: undefined,
+        customDescriptions: undefined,
       }));
     }
   };
@@ -205,17 +240,27 @@ export function MatrixPage({ mode }: Props) {
   const hasCustomDefaults =
     (!!profile.customExpectations &&
       Object.keys(profile.customExpectations).length > 0) ||
-    (!!profile.customRoleMeta &&
-      Object.keys(profile.customRoleMeta).length > 0);
+    (!!profile.customDescriptions &&
+      Object.keys(profile.customDescriptions).length > 0);
 
   const selectedCapability =
     selectedCapabilityId
       ? COMPETENCIES.find((c) => c.id === selectedCapabilityId) ?? null
       : null;
 
-  const meta: RoleMeta = {
-    ...ROLE_META[profile.selectedRole],
-    ...(profile.customRoleMeta?.[profile.selectedRole] ?? {}),
+  const meta = ROLE_META[profile.selectedRole];
+
+  const resolveDescriptions = (id: CompetencyId): Record<Role, string[]> => {
+    const baseline =
+      COMPETENCIES.find((c) => c.id === id)?.descriptions ??
+      ({} as Record<Role, string[]>);
+    const overrides = profile.customDescriptions?.[id] ?? {};
+    return {
+      junior: overrides.junior ?? baseline.junior ?? [],
+      mid: overrides.mid ?? baseline.mid ?? [],
+      senior: overrides.senior ?? baseline.senior ?? [],
+      lead: overrides.lead ?? baseline.lead ?? [],
+    };
   };
 
   const gaps: Gap[] = COMPETENCIES.flatMap((c) => {
@@ -256,7 +301,7 @@ export function MatrixPage({ mode }: Props) {
             </h1>
             <p className="no-print mt-2 text-slate-600 max-w-2xl text-sm leading-relaxed">
               {mode === "define"
-                ? "Pick a role, then edit its meta strip (Headline, Scope, Ownership, etc.) and click cells to override the expected level per capability. Changes save automatically."
+                ? "Click a capability label on the wheel to edit the Junior → Lead bullet descriptions for that capability. Click cells to override the expected level per role. Changes save automatically."
                 : "Four levels (Junior, Mid, Senior, Lead) across seven capabilities. Switch roles to see expectations, click cells to rate yourself, and click a capability label to read the full ladder."}
             </p>
             <p className="print-only text-xs text-slate-500 mt-2">
@@ -287,75 +332,52 @@ export function MatrixPage({ mode }: Props) {
         </div>
 
         <div className="role-meta mb-6 rounded-md border border-slate-200 bg-white px-4 py-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm">
-          {(
-            [
-              { key: "headline", label: "Headline", multiline: false },
-              { key: "scope", label: "Scope", multiline: false },
-              { key: "ownership", label: "Ownership", multiline: true },
-              {
-                key: "collaborators",
-                label: "Who they work with",
-                multiline: true,
-              },
-              {
-                key: "people",
-                label: "People responsibility",
-                multiline: true,
-              },
-              {
-                key: "experience",
-                label: "Indicative experience",
-                multiline: false,
-              },
-            ] as Array<{
-              key: keyof RoleMeta;
-              label: string;
-              multiline: boolean;
-            }>
-          ).map(({ key, label, multiline }) => (
-            <div key={key}>
-              <div className="text-[10px] uppercase tracking-wide text-slate-500">
-                {key === "headline"
-                  ? `${ROLE_LABELS[profile.selectedRole]} · Headline`
-                  : label}
-              </div>
-              {mode === "define" ? (
-                multiline ? (
-                  <textarea
-                    className="mt-1 w-full border border-slate-300 rounded-md px-2 py-1.5 text-xs leading-snug text-slate-700 resize-y focus:outline-none focus:ring-2 focus:ring-slate-400"
-                    rows={2}
-                    value={meta[key]}
-                    onChange={(e) => setRoleMetaField(key, e.target.value)}
-                  />
-                ) : (
-                  <input
-                    type="text"
-                    className={
-                      "mt-1 w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 " +
-                      (key === "headline"
-                        ? "text-slate-900 font-medium"
-                        : "text-slate-900")
-                    }
-                    value={meta[key]}
-                    onChange={(e) => setRoleMetaField(key, e.target.value)}
-                  />
-                )
-              ) : (
-                <div
-                  className={
-                    "mt-0.5 " +
-                    (key === "headline"
-                      ? "text-slate-900 font-medium"
-                      : key === "scope"
-                        ? "text-slate-900"
-                        : "text-slate-700 text-xs leading-snug")
-                  }
-                >
-                  {meta[key]}
-                </div>
-              )}
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-slate-500">
+              {ROLE_LABELS[profile.selectedRole]} · Headline
             </div>
-          ))}
+            <div className="text-slate-900 font-medium mt-0.5">
+              {meta.headline}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-slate-500">
+              Scope
+            </div>
+            <div className="text-slate-900 mt-0.5">{meta.scope}</div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-slate-500">
+              Ownership
+            </div>
+            <div className="text-slate-700 mt-0.5 text-xs leading-snug">
+              {meta.ownership}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-slate-500">
+              Who they work with
+            </div>
+            <div className="text-slate-700 mt-0.5 text-xs leading-snug">
+              {meta.collaborators}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-slate-500">
+              People responsibility
+            </div>
+            <div className="text-slate-700 mt-0.5 text-xs leading-snug">
+              {meta.people}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-slate-500">
+              Indicative experience
+            </div>
+            <div className="text-slate-700 mt-0.5 text-xs leading-snug">
+              {meta.experience}
+            </div>
+          </div>
         </div>
 
         <div className="matrix-row grid lg:grid-cols-[1fr_280px] gap-8 items-start">
@@ -376,8 +398,17 @@ export function MatrixPage({ mode }: Props) {
             {selectedCapability ? (
               <CapabilityDetail
                 competency={selectedCapability}
+                descriptions={resolveDescriptions(selectedCapability.id)}
                 selectedRole={profile.selectedRole}
                 onClose={() => setSelectedCapabilityId(null)}
+                mode={mode}
+                onChangeBullet={(role, idx, value) =>
+                  setBullet(selectedCapability.id, role, idx, value)
+                }
+                onAddBullet={(role) => addBullet(selectedCapability.id, role)}
+                onRemoveBullet={(role, idx) =>
+                  removeBullet(selectedCapability.id, role, idx)
+                }
               />
             ) : (
               <Legend
@@ -442,15 +473,19 @@ export function MatrixPage({ mode }: Props) {
           browser.
         </p>
       </div>
-      {hovered && (
-        <CellHoverCard
-          competency={
-            COMPETENCIES.find((c) => c.id === hovered.id) ?? COMPETENCIES[0]
-          }
-          level={hovered.level}
-          anchor={hovered.anchor}
-        />
-      )}
+      {hovered && (() => {
+        const comp =
+          COMPETENCIES.find((c) => c.id === hovered.id) ?? COMPETENCIES[0];
+        const resolved = resolveDescriptions(comp.id);
+        return (
+          <CellHoverCard
+            competency={comp}
+            bullets={resolved[ROLES[hovered.level - 1]]}
+            level={hovered.level}
+            anchor={hovered.anchor}
+          />
+        );
+      })()}
     </main>
   );
 }

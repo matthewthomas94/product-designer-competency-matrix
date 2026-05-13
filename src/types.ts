@@ -91,7 +91,9 @@ export interface Definition {
   description: string;
 }
 
-export type CustomRoleMeta = Partial<Record<Role, Partial<RoleMeta>>>;
+export type CustomDescriptions = Partial<
+  Record<CompetencyId, Partial<Record<Role, string[]>>>
+>;
 
 export interface UserProfile {
   selectedRole: Role;
@@ -100,7 +102,7 @@ export interface UserProfile {
   // Free-text notes the user enters against each gap capability — used to
   // fill in the Growth Plan table for export.
   gapNotes?: Partial<Record<CompetencyId, GapNote>>;
-  // Overrides for the per-role meta strip (Headline, Scope, Ownership, etc).
-  // Falls back to ROLE_META on a per-field basis. Edited in /define.
-  customRoleMeta?: CustomRoleMeta;
+  // Overrides for the per-capability per-role bullet ladders shown in the
+  // capability detail panel and hover tooltips. Edited in /define.
+  customDescriptions?: CustomDescriptions;
 }

@@ -4,11 +4,12 @@ import { AREA_LABELS, ROLES, ROLE_LABELS } from "../types";
 
 interface Props {
   competency: Competency;
+  bullets: string[];
   level: 1 | 2 | 3 | 4;
   anchor: DOMRect;
 }
 
-export function CellHoverCard({ competency, level, anchor }: Props) {
+export function CellHoverCard({ competency, bullets, level, anchor }: Props) {
   const role = ROLES[level - 1];
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
@@ -38,7 +39,7 @@ export function CellHoverCard({ competency, level, anchor }: Props) {
     setPos({ left, top });
   }, [anchor]);
 
-  const points = competency.descriptions[role];
+  const points = bullets;
 
   return (
     <div
