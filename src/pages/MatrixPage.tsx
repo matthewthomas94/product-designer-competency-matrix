@@ -17,6 +17,7 @@ import { CompetencyMatrix } from "../components/CompetencyMatrix";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 import { Legend } from "../components/Legend";
 import { CapabilityDetail } from "../components/CapabilityDetail";
+import { CellHoverCard } from "../components/CellHoverCard";
 import { GapsTable, type Gap } from "../components/GapsTable";
 
 const STORAGE_KEY = "competency-matrix:v2";
@@ -63,6 +64,11 @@ export function MatrixPage({ mode }: Props) {
   const [profile, setProfile] = useState<UserProfile>(loadProfile);
   const [selectedCapabilityId, setSelectedCapabilityId] =
     useState<CompetencyId | null>(null);
+  const [hovered, setHovered] = useState<{
+    id: CompetencyId;
+    level: 1 | 2 | 3 | 4;
+    anchor: DOMRect;
+  } | null>(null);
 
   useEffect(() => {
     try {
@@ -113,6 +119,15 @@ export function MatrixPage({ mode }: Props) {
   const handleCapabilityClick = (id: CompetencyId) => {
     setSelectedCapabilityId((prev) => (prev === id ? null : id));
   };
+
+  const handleCellHover = (
+    id: CompetencyId,
+    level: 1 | 2 | 3 | 4,
+    target: SVGPathElement,
+  ) => {
+    setHovered({ id, level, anchor: target.getBoundingClientRect() });
+  };
+  const handleCellLeave = () => setHovered(null);
 
   const setGapNote = (
     id: CompetencyId,
@@ -283,6 +298,8 @@ export function MatrixPage({ mode }: Props) {
               onCellClick={handleCellClick}
               onCapabilityClick={handleCapabilityClick}
               selectedCapabilityId={selectedCapabilityId}
+              onCellHover={handleCellHover}
+              onCellLeave={handleCellLeave}
             />
           </div>
           <aside className="no-print">
@@ -355,6 +372,15 @@ export function MatrixPage({ mode }: Props) {
           browser.
         </p>
       </div>
+      {hovered && (
+        <CellHoverCard
+          competency={
+            COMPETENCIES.find((c) => c.id === hovered.id) ?? COMPETENCIES[0]
+          }
+          level={hovered.level}
+          anchor={hovered.anchor}
+        />
+      )}
     </main>
   );
 }

@@ -21,6 +21,12 @@ interface Props {
   onCellClick: (id: CompetencyId, level: Level) => void;
   onCapabilityClick: (id: CompetencyId) => void;
   selectedCapabilityId?: CompetencyId | null;
+  onCellHover?: (
+    id: CompetencyId,
+    level: 1 | 2 | 3 | 4,
+    target: SVGPathElement,
+  ) => void;
+  onCellLeave?: () => void;
 }
 
 export function CompetencyMatrix({
@@ -31,6 +37,8 @@ export function CompetencyMatrix({
   onCellClick,
   onCapabilityClick,
   selectedCapabilityId,
+  onCellHover,
+  onCellLeave,
 }: Props) {
   return (
     <svg
@@ -57,6 +65,12 @@ export function CompetencyMatrix({
                   expectedLevel={expectedLevel as Level}
                   mode={mode}
                   onClick={() => onCellClick(comp.id, k as Level)}
+                  onHover={
+                    onCellHover
+                      ? (target) => onCellHover(comp.id, k, target)
+                      : undefined
+                  }
+                  onLeave={onCellLeave}
                 />
               );
             })}

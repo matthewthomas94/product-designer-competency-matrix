@@ -9,6 +9,8 @@ interface Props {
   expectedLevel: Level;
   mode: Mode;
   onClick: () => void;
+  onHover?: (target: SVGPathElement) => void;
+  onLeave?: () => void;
 }
 
 export function CompetencyCell({
@@ -19,6 +21,8 @@ export function CompetencyCell({
   expectedLevel,
   mode,
   onClick,
+  onHover,
+  onLeave,
 }: Props) {
   let fill = "var(--cell-empty)";
   let fillOpacity = 1;
@@ -57,9 +61,11 @@ export function CompetencyCell({
 
   const handleEnter = (e: MouseEvent<SVGPathElement>) => {
     e.currentTarget.style.filter = "brightness(1.08)";
+    onHover?.(e.currentTarget);
   };
   const handleLeave = (e: MouseEvent<SVGPathElement>) => {
     e.currentTarget.style.filter = "";
+    onLeave?.();
   };
 
   return (
@@ -71,13 +77,12 @@ export function CompetencyCell({
       strokeWidth={1}
       role="button"
       tabIndex={0}
+      aria-label={`${competencyLabel} — ${titleSuffix}`}
       onClick={onClick}
       onKeyDown={handleKey}
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
       style={{ cursor: "pointer", transition: "filter 120ms" }}
-    >
-      <title>{`${competencyLabel} — ${titleSuffix}`}</title>
-    </path>
+    />
   );
 }
