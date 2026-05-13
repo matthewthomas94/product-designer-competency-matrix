@@ -86,6 +86,11 @@ export interface GapNote {
   kpi?: string;
 }
 
+export interface Definition {
+  term: string;
+  description: string;
+}
+
 export interface UserProfile {
   selectedRole: Role;
   ratings: Partial<Record<CompetencyId, Level>>;
@@ -93,4 +98,6 @@ export interface UserProfile {
   // Free-text notes the user enters against each gap capability — used to
   // fill in the Growth Plan table for export.
   gapNotes?: Partial<Record<CompetencyId, GapNote>>;
+  // Overrides for the glossary printed beneath the matrix. Edited in /define.
+  customDefinitions?: Definition[];
 }

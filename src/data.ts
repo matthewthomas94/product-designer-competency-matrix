@@ -260,7 +260,7 @@ export const COMPETENCIES: Competency[] = [
 ];
 
 // Definitions section from the PDF — shown beneath the matrix as glossary.
-export const DEFINITIONS: { term: string; description: string }[] = [
+export const DEFINITIONS: import("./types").Definition[] = [
   {
     term: "Domain",
     description:

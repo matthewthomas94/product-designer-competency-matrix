@@ -18,6 +18,7 @@ import { RoleSwitcher } from "../components/RoleSwitcher";
 import { Legend } from "../components/Legend";
 import { CapabilityDetail } from "../components/CapabilityDetail";
 import { CellHoverCard } from "../components/CellHoverCard";
+import { DefinitionsEditor } from "../components/DefinitionsEditor";
 import { GapsTable, type Gap } from "../components/GapsTable";
 
 const STORAGE_KEY = "competency-matrix:v2";
@@ -50,7 +51,22 @@ function loadProfile(): UserProfile {
       parsed.gapNotes && typeof parsed.gapNotes === "object"
         ? (parsed.gapNotes as UserProfile["gapNotes"])
         : undefined;
-    return { selectedRole: role, ratings, customExpectations, gapNotes };
+    const customDefinitions = Array.isArray(parsed.customDefinitions)
+      ? parsed.customDefinitions.filter(
+          (d): d is { term: string; description: string } =>
+            !!d &&
+            typeof d === "object" &&
+            typeof (d as { term?: unknown }).term === "string" &&
+            typeof (d as { description?: unknown }).description === "string",
+        )
+      : undefined;
+    return {
+      selectedRole: role,
+      ratings,
+      customExpectations,
+      gapNotes,
+      customDefinitions,
+    };
   } catch {
     return defaultProfile;
   }
@@ -129,6 +145,51 @@ export function MatrixPage({ mode }: Props) {
   };
   const handleCellLeave = () => setHovered(null);
 
+  const setDefinition = (
+    idx: number,
+    field: "term" | "description",
+    value: string,
+  ) =>
+    setProfile((p) => {
+      const current = p.customDefinitions ?? DEFINITIONS;
+      const next = current.map((d, i) =>
+        i === idx ? { ...d, [field]: value } : { ...d },
+      );
+      return { ...p, customDefinitions: next };
+    });
+
+  const addDefinition = () =>
+    setProfile((p) => {
+      const current = p.customDefinitions ?? DEFINITIONS;
+      return {
+        ...p,
+        customDefinitions: [
+          ...current.map((d) => ({ ...d })),
+          { term: "", description: "" },
+        ],
+      };
+    });
+
+  const removeDefinition = (idx: number) =>
+    setProfile((p) => {
+      const current = p.customDefinitions ?? DEFINITIONS;
+      return {
+        ...p,
+        customDefinitions: current
+          .filter((_, i) => i !== idx)
+          .map((d) => ({ ...d })),
+      };
+    });
+
+  const resetDefinitions = () => {
+    if (!profile.customDefinitions) return;
+    if (
+      window.confirm("Reset the glossary back to the original definitions?")
+    ) {
+      setProfile((p) => ({ ...p, customDefinitions: undefined }));
+    }
+  };
+
   const setGapNote = (
     id: CompetencyId,
     field: "evidence" | "kpi",
@@ -171,6 +232,7 @@ export function MatrixPage({ mode }: Props) {
   const hasCustomDefaults =
     !!profile.customExpectations &&
     Object.keys(profile.customExpectations).length > 0;
+  const definitions = profile.customDefinitions ?? DEFINITIONS;
 
   const selectedCapability =
     selectedCapabilityId
@@ -224,13 +286,21 @@ export function MatrixPage({ mode }: Props) {
               {ROLE_LABELS[profile.selectedRole]} · Exported {exportToday}
             </p>
           </div>
-          {mode === "rate" && (
+          {mode === "rate" ? (
             <button
               type="button"
               onClick={() => window.print()}
               className="no-print self-start px-4 py-2 rounded-md bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors"
             >
               Export PDF
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => window.location.assign("/")}
+              className="no-print self-start px-4 py-2 rounded-md bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors"
+            >
+              Save & view matrix
             </button>
           )}
         </header>
@@ -351,20 +421,35 @@ export function MatrixPage({ mode }: Props) {
         <section className="no-print mt-16 max-w-3xl">
           <h2 className="text-lg font-semibold text-slate-900">Definitions</h2>
           <p className="text-sm text-slate-600 mt-1">
-            Terms in this matrix that have a specific meaning at Pay.
+            {mode === "define"
+              ? "Edit, add, or remove glossary terms. Changes save automatically."
+              : "Terms in this matrix that have a specific meaning at Pay."}
           </p>
-          <dl className="mt-4 space-y-3">
-            {DEFINITIONS.map(({ term, description }) => (
-              <div key={term}>
-                <dt className="text-sm font-semibold text-slate-900">
-                  {term}
-                </dt>
-                <dd className="text-sm text-slate-700 mt-0.5 leading-relaxed">
-                  {description}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          {mode === "define" ? (
+            <div className="mt-4">
+              <DefinitionsEditor
+                definitions={definitions}
+                onChange={setDefinition}
+                onAdd={addDefinition}
+                onRemove={removeDefinition}
+                onReset={resetDefinitions}
+                resetDisabled={!profile.customDefinitions}
+              />
+            </div>
+          ) : (
+            <dl className="mt-4 space-y-3">
+              {definitions.map(({ term, description }, idx) => (
+                <div key={`${term}-${idx}`}>
+                  <dt className="text-sm font-semibold text-slate-900">
+                    {term}
+                  </dt>
+                  <dd className="text-sm text-slate-700 mt-0.5 leading-relaxed">
+                    {description}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </section>
 
         <p className="no-print mt-12 text-xs text-slate-400">
