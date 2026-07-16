@@ -1,6 +1,10 @@
+import { COMPETENCIES } from "./data";
+
 const TAU = Math.PI * 2;
 
-export const SECTORS = 7;
+// One sector per capability — derived so adding/removing a capability in
+// data.ts reshapes the wheel automatically.
+export const SECTORS = COMPETENCIES.length;
 export const RINGS = 4;
 export const VIEWBOX = 1000;
 export const CX = 500;

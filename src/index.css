@@ -6,6 +6,11 @@
   --gap: #f97316;
   --cell-empty: #f1f5f9;
   --cell-stroke: #ffffff;
+
+  /* Proficiency shades: lightest salmon → blood orange. */
+  --prof-developing: #fed7aa;
+  --prof-meeting: #fb923c;
+  --prof-exceeding: #c2410c;
 }
 
 html,
@@ -65,10 +70,28 @@ svg path[role="button"]:focus-visible {
     page-break-inside: avoid;
   }
 
-  /* Force the Growth Plan onto its own page. */
-  .growth-plan {
+  /* Break to a second page for the manager notes, then let the growth plan
+     flow directly beneath it. */
+  .manager-notes {
     page-break-before: always;
     margin-top: 0 !important;
+    page-break-inside: avoid;
+  }
+
+  .growth-plan {
+    page-break-before: auto;
+    margin-top: 2rem !important;
+  }
+
+  /* The manager notes box prints as a bordered, fillable panel. */
+  textarea.manager-notes-textarea {
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    resize: none;
+    width: 100%;
+    min-height: 120px;
+    font-size: 11px;
+    line-height: 1.5;
   }
 
   /* Textareas should print as bordered boxes that read as writable cells. */

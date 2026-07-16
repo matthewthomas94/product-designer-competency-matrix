@@ -1,11 +1,17 @@
 import type { ChangeEvent } from "react";
-import type { Competency, CompetencyId, GapNote, Level } from "../types";
+import type {
+  Competency,
+  CompetencyId,
+  GapNote,
+  Level,
+  Proficiency,
+} from "../types";
 import { LEVEL_LABELS } from "../types";
 
 export interface Gap {
   competency: Competency;
   expectedLevel: Level;
-  userLevel: Level;
+  proficiency?: Proficiency;
   expectedBullets: string[];
 }
 

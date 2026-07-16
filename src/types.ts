@@ -52,6 +52,7 @@ export const AREA_DESCRIPTIONS: Record<Area, string> = {
 export type CompetencyId =
   | "design-craft"
   | "research-insights"
+  | "tooling"
   | "commercial-thinking"
   | "delivery"
   | "collaboration-communication"
@@ -73,13 +74,34 @@ export interface RoleMeta {
   scope: string;
   ownership: string;
   collaborators: string;
-  people: string;
-  experience: string;
 }
 
 export type RoleExpectations = Record<Role, Record<CompetencyId, Level>>;
 
 export type Mode = "rate" | "define";
+
+// How proficient someone is at a given capability *for a given level* (ring).
+// Cycled by repeated clicks on a cell; absent = unset (grey).
+export type Proficiency = 1 | 2 | 3;
+
+export const PROFICIENCY_LABELS: Record<Proficiency, string> = {
+  1: "Developing",
+  2: "Meeting",
+  3: "Exceeding",
+};
+
+export const PROFICIENCY_DESCRIPTIONS: Record<Proficiency, string> = {
+  1: "Building towards the bar at this level.",
+  2: "Meeting the bar for this level.",
+  3: "Consistently exceeding the bar for this level.",
+};
+
+// Per-cell ratings: for each capability, an optional proficiency at each
+// level (ring). A capability with no entry — or a level with no entry — is
+// unset.
+export type CellRatings = Partial<
+  Record<CompetencyId, Partial<Record<Level, Proficiency>>>
+>;
 
 export interface GapNote {
   evidence?: string;
@@ -97,7 +119,7 @@ export type CustomDescriptions = Partial<
 
 export interface UserProfile {
   selectedRole: Role;
-  ratings: Partial<Record<CompetencyId, Level>>;
+  ratings: CellRatings;
   customExpectations?: Partial<Record<Role, Record<CompetencyId, Level>>>;
   // Free-text notes the user enters against each gap capability — used to
   // fill in the Growth Plan table for export.
@@ -105,4 +127,7 @@ export interface UserProfile {
   // Overrides for the per-capability per-role bullet ladders shown in the
   // capability detail panel and hover tooltips. Edited in /define.
   customDescriptions?: CustomDescriptions;
+  // Free-text overall assessment the manager fills in above the growth plan;
+  // included in the PDF export.
+  managerNotes?: string;
 }

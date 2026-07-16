@@ -1,11 +1,12 @@
 import type { KeyboardEvent, MouseEvent } from "react";
-import type { Level, Mode } from "../types";
+import type { Level, Mode, Proficiency } from "../types";
+import { PROFICIENCY_LABELS, ROLE_LABELS, ROLES } from "../types";
 
 interface Props {
   d: string;
   competencyLabel: string;
   level: 1 | 2 | 3 | 4;
-  userLevel: Level;
+  proficiency?: Proficiency;
   expectedLevel: Level;
   mode: Mode;
   onClick: () => void;
@@ -13,11 +14,17 @@ interface Props {
   onLeave?: () => void;
 }
 
+const PROFICIENCY_FILL: Record<Proficiency, string> = {
+  1: "var(--prof-developing)",
+  2: "var(--prof-meeting)",
+  3: "var(--prof-exceeding)",
+};
+
 export function CompetencyCell({
   d,
   competencyLabel,
   level,
-  userLevel,
+  proficiency,
   expectedLevel,
   mode,
   onClick,
@@ -29,18 +36,13 @@ export function CompetencyCell({
   let titleSuffix: string;
 
   if (mode === "rate") {
-    const userFilled = userLevel >= level;
-    const isGap = expectedLevel >= level && userLevel < level;
-    if (userFilled) {
-      fill = "var(--user)";
-      fillOpacity = 0.6 + (level - 1) * 0.12;
-    } else if (isGap) {
-      fill = "var(--gap)";
-      fillOpacity = 0.18;
+    const levelLabel = ROLE_LABELS[ROLES[level - 1]];
+    if (proficiency) {
+      fill = PROFICIENCY_FILL[proficiency];
+      titleSuffix = `${levelLabel}: ${PROFICIENCY_LABELS[proficiency]} (click to cycle)`;
+    } else {
+      titleSuffix = `${levelLabel}: not set (click to set Developing)`;
     }
-    titleSuffix = userFilled
-      ? `level ${level} (click to unset)`
-      : `set yourself to level ${level}`;
   } else {
     const expectedFilled = expectedLevel >= level;
     if (expectedFilled) {

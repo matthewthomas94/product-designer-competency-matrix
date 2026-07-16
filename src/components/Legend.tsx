@@ -41,9 +41,23 @@ export function Legend({
             <li className="flex items-center gap-2">
               <span
                 className="inline-block w-4 h-4 rounded-sm"
-                style={{ backgroundColor: "var(--user)" }}
+                style={{ backgroundColor: "var(--prof-developing)" }}
               />
-              <span className="text-slate-700">Your level</span>
+              <span className="text-slate-700">Developing</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span
+                className="inline-block w-4 h-4 rounded-sm"
+                style={{ backgroundColor: "var(--prof-meeting)" }}
+              />
+              <span className="text-slate-700">Meeting</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span
+                className="inline-block w-4 h-4 rounded-sm"
+                style={{ backgroundColor: "var(--prof-exceeding)" }}
+              />
+              <span className="text-slate-700">Exceeding</span>
             </li>
             <li className="flex items-center gap-2">
               <span
@@ -52,12 +66,9 @@ export function Legend({
               />
               <span className="text-slate-700">Expected for role</span>
             </li>
-            <li className="flex items-center gap-2">
-              <span
-                className="inline-block w-4 h-4 rounded-sm"
-                style={{ backgroundColor: "var(--gap)", opacity: 0.25 }}
-              />
-              <span className="text-slate-700">Gap to close</span>
+            <li className="text-slate-600 leading-snug text-xs">
+              Click a cell to cycle its proficiency; click again past Exceeding
+              to clear it.
             </li>
           </ul>
         ) : (

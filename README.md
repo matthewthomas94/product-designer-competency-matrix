@@ -1,6 +1,6 @@
 # Product Designer Competency Matrix
 
-An interactive radial competency matrix for a Product Design team — four levels (Junior, Mid, Senior, Lead) across seven capabilities. Rate yourself, see gaps versus role expectations, export a growth plan.
+An interactive radial competency matrix for a Product Design team — four levels (Junior, Mid, Senior, Lead) across eight capabilities. Rate yourself, see gaps versus role expectations, export a growth plan.
 
 Based on an internal Product Design Competency Matrix draft (May 2026).
 
@@ -8,7 +8,7 @@ Based on an internal Product Design Competency Matrix draft (May 2026).
 
 | Area | Capabilities |
 | --- | --- |
-| Craft | Design Craft · Research & Insights |
+| Craft | Design Craft · Research & Insights · Tooling |
 | Outcomes | Commercial Thinking · Delivery |
 | People & Influence | Collaboration & Communication · Stakeholder Management · Mentorship & People Leadership |
 
@@ -60,7 +60,7 @@ src/
 
 All copy and the role ladder live in [`src/data.ts`](src/data.ts):
 
-- `COMPETENCIES` — the seven capabilities with subtitle, area, and Junior/Mid/Senior/Lead bullets.
+- `COMPETENCIES` — the eight capabilities with subtitle, area, and Junior/Mid/Senior/Lead bullets.
 - `ROLE_META` — the four levels with their headline, scope, ownership, etc.
 - `ROLE_EXPECTATIONS` — uniform-per-role by default. Override in-app via `/define` or edit here directly.
 - `DEFINITIONS` — the glossary printed below the matrix.

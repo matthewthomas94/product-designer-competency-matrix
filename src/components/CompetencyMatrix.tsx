@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import type { CompetencyId, Level, Mode } from "../types";
+import type { CellRatings, CompetencyId, Level, Mode } from "../types";
 import { COMPETENCIES } from "../data";
 import {
   CX,
@@ -14,7 +14,7 @@ import {
 import { CompetencyCell } from "./CompetencyCell";
 
 interface Props {
-  ratings: Partial<Record<CompetencyId, Level>>;
+  ratings: CellRatings;
   expectations: Record<CompetencyId, Level>;
   centreLabel: string;
   mode: Mode;
@@ -47,9 +47,9 @@ export function CompetencyMatrix({
       role="img"
       aria-label="Product Designer Competency Matrix"
     >
-      {/* Cells: 7 capabilities × 4 rings = 28 paths */}
+      {/* Cells: one capability per sector × 4 rings. */}
       {COMPETENCIES.map((comp, i) => {
-        const userLevel = (ratings[comp.id] ?? 0) as Level;
+        const cellRatings = ratings[comp.id] ?? {};
         const expectedLevel = expectations[comp.id] ?? 0;
         return (
           <Fragment key={`cells-${comp.id}`}>
@@ -61,7 +61,7 @@ export function CompetencyMatrix({
                   d={cellPath(i, k)}
                   competencyLabel={comp.label}
                   level={k}
-                  userLevel={userLevel}
+                  proficiency={cellRatings[k]}
                   expectedLevel={expectedLevel as Level}
                   mode={mode}
                   onClick={() => onCellClick(comp.id, k as Level)}

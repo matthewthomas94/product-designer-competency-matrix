@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import type {
+  CellRatings,
   CompetencyId,
   CustomDescriptions,
   Level,
   Mode,
+  Proficiency,
   Role,
   UserProfile,
 } from "../types";
@@ -28,6 +30,18 @@ const defaultProfile: UserProfile = {
   ratings: {},
 };
 
+// Keep only per-cell rating maps. Older stored data used a single number per
+// capability; those entries are dropped rather than misread as a cell map.
+function sanitizeRatings(raw: unknown): CellRatings {
+  if (!raw || typeof raw !== "object") return {};
+  const out: CellRatings = {};
+  for (const [id, cells] of Object.entries(raw as Record<string, unknown>)) {
+    if (!cells || typeof cells !== "object") continue;
+    out[id as CompetencyId] = cells as Partial<Record<Level, Proficiency>>;
+  }
+  return out;
+}
+
 function loadProfile(): UserProfile {
   if (typeof window === "undefined") return defaultProfile;
   try {
@@ -38,10 +52,7 @@ function loadProfile(): UserProfile {
     const role = ROLES.includes(parsed.selectedRole as Role)
       ? (parsed.selectedRole as Role)
       : defaultProfile.selectedRole;
-    const ratings =
-      parsed.ratings && typeof parsed.ratings === "object"
-        ? (parsed.ratings as UserProfile["ratings"])
-        : {};
+    const ratings = sanitizeRatings(parsed.ratings);
     const customExpectations =
       parsed.customExpectations &&
       typeof parsed.customExpectations === "object"
@@ -55,12 +66,15 @@ function loadProfile(): UserProfile {
       parsed.customDescriptions && typeof parsed.customDescriptions === "object"
         ? (parsed.customDescriptions as CustomDescriptions)
         : undefined;
+    const managerNotes =
+      typeof parsed.managerNotes === "string" ? parsed.managerNotes : undefined;
     return {
       selectedRole: role,
       ratings,
       customExpectations,
       gapNotes,
       customDescriptions,
+      managerNotes,
     };
   } catch {
     return defaultProfile;
@@ -92,13 +106,27 @@ export function MatrixPage({ mode }: Props) {
   const setRole = (role: Role) =>
     setProfile((p) => ({ ...p, selectedRole: role }));
 
-  const setRating = (id: CompetencyId, level: Level) =>
+  // Cycle a cell's proficiency: unset → Developing → Meeting → Exceeding →
+  // unset. Each cell (capability × level) is tracked independently.
+  const cycleRating = (id: CompetencyId, level: Level) =>
     setProfile((p) => {
-      const current = p.ratings[id] ?? 0;
-      const next = current === level ? 0 : level;
+      const forCap = { ...(p.ratings[id] ?? {}) };
+      const current = forCap[level] ?? 0;
+      const next = current >= 3 ? 0 : current + 1;
+      if (next === 0) {
+        delete forCap[level];
+      } else {
+        forCap[level] = next as Proficiency;
+        // Reaching a higher level implies progression through the ones beneath
+        // it — default any unset lower level to "Meeting". Cells the user has
+        // already set are left untouched so edits stick.
+        for (let lower = 1 as Level; lower < level; lower++) {
+          if (forCap[lower] === undefined) forCap[lower] = 2;
+        }
+      }
       const ratings = { ...p.ratings };
-      if (next === 0) delete ratings[id];
-      else ratings[id] = next;
+      if (Object.keys(forCap).length === 0) delete ratings[id];
+      else ratings[id] = forCap;
       return { ...p, ratings };
     });
 
@@ -123,7 +151,7 @@ export function MatrixPage({ mode }: Props) {
     });
 
   const handleCellClick = (id: CompetencyId, level: Level) => {
-    if (mode === "rate") setRating(id, level);
+    if (mode === "rate") cycleRating(id, level);
     else setExpectation(id, level);
   };
 
@@ -211,6 +239,12 @@ export function MatrixPage({ mode }: Props) {
       return { ...p, gapNotes };
     });
 
+  const setManagerNotes = (value: string) =>
+    setProfile((p) => ({
+      ...p,
+      managerNotes: value === "" ? undefined : value,
+    }));
+
   const resetRatings = () => {
     if (Object.keys(profile.ratings).length === 0) return;
     if (window.confirm("Clear your competency ratings?")) {
@@ -264,12 +298,14 @@ export function MatrixPage({ mode }: Props) {
   };
 
   const gaps: Gap[] = COMPETENCIES.flatMap((c) => {
-    const userLevel = (profile.ratings[c.id] ?? 0) as Level;
     const expectedLevel = (expectations[c.id] ?? 0) as Level;
-    if (expectedLevel <= userLevel) return [];
+    if (expectedLevel === 0) return [];
+    const proficiency = profile.ratings[c.id]?.[expectedLevel];
+    // Meeting (2) or Exceeding (3) at the role's level clears the gap.
+    if (proficiency !== undefined && proficiency >= 2) return [];
     const expectedRole = ROLES[expectedLevel - 1];
     const expectedBullets = resolveDescriptions(c.id)[expectedRole];
-    return [{ competency: c, expectedLevel, userLevel, expectedBullets }];
+    return [{ competency: c, expectedLevel, proficiency, expectedBullets }];
   });
 
   const exportToday = new Date().toLocaleDateString(undefined, {
@@ -304,7 +340,7 @@ export function MatrixPage({ mode }: Props) {
             <p className="no-print mt-2 text-slate-600 max-w-2xl text-sm leading-relaxed">
               {mode === "define"
                 ? "Click a capability label on the wheel to edit the Junior → Lead bullet descriptions for that capability. Click cells to override the expected level per role. Changes save automatically."
-                : "Four levels (Junior, Mid, Senior, Lead) across seven capabilities. Switch roles to see expectations, click cells to rate yourself, and click a capability label to read the full ladder."}
+                : "Four levels (Junior, Mid, Senior, Lead) across eight capabilities. Switch roles to see expectations, click cells to rate yourself, and click a capability label to read the full ladder."}
             </p>
             <p className="print-only text-xs text-slate-500 mt-2">
               {ROLE_LABELS[profile.selectedRole]} · Exported {exportToday}
@@ -364,22 +400,6 @@ export function MatrixPage({ mode }: Props) {
               {meta.collaborators}
             </div>
           </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-slate-500">
-              People responsibility
-            </div>
-            <div className="text-slate-700 mt-0.5 text-xs leading-snug">
-              {meta.people}
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-slate-500">
-              Indicative experience
-            </div>
-            <div className="text-slate-700 mt-0.5 text-xs leading-snug">
-              {meta.experience}
-            </div>
-          </div>
         </div>
 
         <div className="matrix-row grid lg:grid-cols-[1fr_280px] gap-8 items-start">
@@ -425,6 +445,23 @@ export function MatrixPage({ mode }: Props) {
         </div>
 
         {mode === "rate" && (
+          <section className="manager-notes mt-12">
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">
+              Manager notes
+            </h2>
+            <p className="text-sm text-slate-600 mb-3 max-w-2xl">
+              Overall assessment, context, and next steps from the manager.
+            </p>
+            <textarea
+              className="manager-notes-textarea w-full min-h-[120px] rounded-md border border-slate-300 px-3 py-2 text-sm bg-white leading-relaxed focus:outline-none focus:ring-2 focus:ring-slate-400"
+              placeholder="Add overall notes for this review…"
+              value={profile.managerNotes ?? ""}
+              onChange={(e) => setManagerNotes(e.target.value)}
+            />
+          </section>
+        )}
+
+        {mode === "rate" && (
           <section className="growth-plan mt-12">
             <div className="flex items-baseline justify-between flex-wrap gap-2 mb-2">
               <h2 className="text-lg font-semibold text-slate-900">
@@ -438,8 +475,8 @@ export function MatrixPage({ mode }: Props) {
             </div>
             <p className="text-sm text-slate-600 mb-4 max-w-2xl">
               {gaps.length === 0
-                ? "You are at or above expected level across every capability for the selected role. Switch roles to plan the next move."
-                : "Capabilities where your current self-rating sits below the expected level. Capture how you have (or will) demonstrate each, and the metric it moves."}
+                ? "You are Meeting or Exceeding the bar on every capability at this role's level. Switch roles to plan the next move."
+                : "Capabilities where you are not yet Meeting the bar at the level expected for this role. Capture how you have (or will) demonstrate each, and the metric it moves."}
             </p>
             {gaps.length > 0 && (
               <GapsTable

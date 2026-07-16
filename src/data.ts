@@ -12,24 +12,18 @@ export const ROLE_META: Record<Role, RoleMeta> = {
     scope: "Yourself",
     ownership: "Supported — close supervision on most work.",
     collaborators: "Their PM, EM, and a senior designer mentor.",
-    people: "None",
-    experience: "0–2 years",
   },
   mid: {
     headline: "Deliver & explore",
     scope: "Your projects",
     ownership: "Growing — independent on bounded projects.",
     collaborators: "Cross-functional pod; broader design team.",
-    people: "Informal peer support",
-    experience: "2–5 years",
   },
   senior: {
     headline: "Guide & drive impact",
     scope: "Your domain (+ 1–2 directs)",
     ownership: "Independent — owns multiple projects in a domain.",
     collaborators: "Senior PM & EM peers; senior stakeholders with support.",
-    people: "1–2 direct reports, typically Junior/Mid",
-    experience: "5–8 years",
   },
   lead: {
     headline: "Complexity & strategy",
@@ -38,8 +32,6 @@ export const ROLE_META: Record<Role, RoleMeta> = {
       "Leads through example — owns the domain. Sets expectations for other designers and team members that work with them in the domain.",
     collaborators:
       "Senior PM & EM peers; senior stakeholders directly; exec when needed.",
-    people: "2–3 direct reports across levels, usually within their domain",
-    experience: "8+ years, typically with prior senior-level scope",
   },
 };
 
@@ -103,6 +95,38 @@ export const COMPETENCIES: Competency[] = [
         "Establishes research practice for their domain jointly with Product; aligns it with the broader design and product research vision.",
         "Synthesises across multiple projects and surfaces; identifies systemic gaps in our user understanding.",
         "Drives research thought leadership for their area — the team comes to them for the question “have we asked the customer about this?”",
+      ],
+    },
+  },
+  {
+    id: "tooling",
+    label: "Tooling",
+    subtitle: "AI-assisted prototyping, tooling, and testing",
+    area: "craft",
+    descriptions: {
+      junior: [
+        "Uses the team's core design and prototyping tools proficiently; building familiarity with AI-assisted features to speed up routine work.",
+        "Follows tooling conventions with guidance; learning which tool fits which task.",
+        "Produces basic interactive prototypes to communicate intent; explores AI tools to generate variations or placeholder content under supervision.",
+        "Curious about new tools; brings what they learn back to the team.",
+      ],
+      mid: [
+        "Independently selects and combines tools — including AI — to produce prototypes that communicate design intent clearly to stakeholders and engineers.",
+        "Builds higher-fidelity, realistic prototypes efficiently; uses AI to accelerate content, variations, and edge-case coverage.",
+        "Sets up testable prototypes and runs them with users, choosing a fidelity appropriate to the question being asked.",
+        "Evaluates new tools critically and adopts those that improve speed or quality.",
+      ],
+      senior: [
+        "Sets the tooling and prototyping quality bar in their domain; mentors others on using AI and other tools effectively and responsibly.",
+        "Pioneers new techniques — e.g. AI-assisted prototyping, realistic data, or code-based prototypes — to test more ambitious or complex experiences.",
+        "Identifies where tooling can unlock clearer communication or faster validation and drives its adoption in the pod.",
+        "Applies judgement on when AI/tooling adds value versus when it introduces risk (fidelity, accessibility, IP, data).",
+      ],
+      lead: [
+        "Defines how the team leverages AI and tooling to communicate intent and test experiences — the practices, guardrails, and standards.",
+        "Champions experimentation with emerging tools and evaluates their impact on craft, speed, and quality across the domain.",
+        "Establishes responsible-use expectations for AI (data, IP, accessibility, bias) and models them.",
+        "The team looks to them for direction on how technology should augment the design process.",
       ],
     },
   },
@@ -300,6 +324,7 @@ function uniform(role: Role): Record<import("./types").CompetencyId, import("./t
   return {
     "design-craft": level,
     "research-insights": level,
+    "tooling": level,
     "commercial-thinking": level,
     "delivery": level,
     "collaboration-communication": level,
