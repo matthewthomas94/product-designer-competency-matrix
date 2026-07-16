@@ -133,8 +133,10 @@ export function MatrixPage({ mode }: Props) {
   const setExpectation = (id: CompetencyId, level: Level) =>
     setProfile((p) => {
       const role = p.selectedRole;
-      const baseline =
-        p.customExpectations?.[role] ?? ROLE_EXPECTATIONS[role];
+      const baseline: Record<CompetencyId, Level> = {
+        ...ROLE_EXPECTATIONS[role],
+        ...p.customExpectations?.[role],
+      };
       const current = baseline[id] ?? 0;
       const next = (current === level ? 0 : level) as Level;
       const updatedRole: Record<CompetencyId, Level> = {
@@ -267,9 +269,13 @@ export function MatrixPage({ mode }: Props) {
     }
   };
 
-  const expectations =
-    profile.customExpectations?.[profile.selectedRole] ??
-    ROLE_EXPECTATIONS[profile.selectedRole];
+  // Merge role defaults underneath any saved overrides so capabilities added
+  // after a custom definition was saved still get their default expected level
+  // (otherwise their target arc goes missing).
+  const expectations = {
+    ...ROLE_EXPECTATIONS[profile.selectedRole],
+    ...profile.customExpectations?.[profile.selectedRole],
+  };
   const hasRatings = Object.keys(profile.ratings).length > 0;
   const hasCustomDefaults =
     (!!profile.customExpectations &&
