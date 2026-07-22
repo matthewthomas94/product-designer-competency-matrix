@@ -5,12 +5,13 @@ const TAU = Math.PI * 2;
 // One sector per capability — derived so adding/removing a capability in
 // data.ts reshapes the wheel automatically.
 export const SECTORS = COMPETENCIES.length;
-export const RINGS = 4;
+// Three rings = the ranking (Developing → Meeting → Exceeding).
+export const RINGS = 3;
 export const VIEWBOX = 1000;
 export const CX = 500;
 export const CY = 500;
 export const R_INNER = 80;
-export const RING_WIDTH = 60;
+export const RING_WIDTH = 80;
 export const R_OUTER = R_INNER + RINGS * RING_WIDTH;
 const R_LABEL = R_OUTER + 30;
 

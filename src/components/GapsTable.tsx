@@ -1,17 +1,11 @@
 import type { ChangeEvent } from "react";
-import type {
-  Competency,
-  CompetencyId,
-  GapNote,
-  Level,
-  Proficiency,
-} from "../types";
+import type { Competency, CompetencyId, GapNote, Level } from "../types";
 import { LEVEL_LABELS } from "../types";
 
 export interface Gap {
   competency: Competency;
-  expectedLevel: Level;
-  proficiency?: Proficiency;
+  expectedRank: Level;
+  rank: Level;
   expectedBullets: string[];
 }
 
@@ -36,7 +30,7 @@ export function GapsTable({ gaps, notes, onChange }: Props) {
               Capability
             </th>
             <th className="border border-slate-300 px-3 py-2 font-semibold w-[22%]">
-              Level expected
+              Ranking
             </th>
             <th className="border border-slate-300 px-3 py-2 font-semibold w-[30%]">
               How you demonstrated this competency
@@ -47,7 +41,7 @@ export function GapsTable({ gaps, notes, onChange }: Props) {
           </tr>
         </thead>
         <tbody>
-          {gaps.map(({ competency, expectedLevel, expectedBullets }) => {
+          {gaps.map(({ competency, expectedRank, rank, expectedBullets }) => {
             const note = notes[competency.id] ?? {};
             return (
               <tr key={competency.id} className="align-top">
@@ -60,12 +54,16 @@ export function GapsTable({ gaps, notes, onChange }: Props) {
                   </div>
                 </td>
                 <td className="border border-slate-300 px-3 py-2">
-                  <div>
-                    <span className="font-mono text-slate-500 mr-1">
-                      {expectedLevel}
-                    </span>
+                  <div className="text-xs text-slate-700">
+                    <span className="text-slate-500">Current: </span>
                     <span className="font-semibold">
-                      {LEVEL_LABELS[expectedLevel]}
+                      {rank > 0 ? LEVEL_LABELS[rank] : "Not ranked"}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-700 mt-0.5">
+                    <span className="text-slate-500">Expected: </span>
+                    <span className="font-semibold">
+                      {LEVEL_LABELS[expectedRank]}
                     </span>
                   </div>
                   {expectedBullets.length > 0 && (

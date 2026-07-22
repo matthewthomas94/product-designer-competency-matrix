@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
 import type {
-  CellRatings,
   CompetencyId,
   CustomDescriptions,
   Level,
   Mode,
-  Proficiency,
+  Ratings,
   Role,
   UserProfile,
 } from "../types";
-import { ROLES, ROLE_LABELS } from "../types";
+import { LEVEL_LABELS, ROLES, ROLE_LABELS } from "../types";
 import {
   COMPETENCIES,
   DEFINITIONS,
@@ -23,21 +22,24 @@ import { CapabilityDetail } from "../components/CapabilityDetail";
 import { CellHoverCard } from "../components/CellHoverCard";
 import { GapsTable, type Gap } from "../components/GapsTable";
 
-const STORAGE_KEY = "competency-matrix:v2";
+// v3: ratings became per-role rankings (was per-cell proficiency in v2). The
+// shapes are incompatible, so v3 starts fresh rather than migrating.
+const STORAGE_KEY = "competency-matrix:v3";
 
 const defaultProfile: UserProfile = {
   selectedRole: "mid",
   ratings: {},
 };
 
-// Keep only per-cell rating maps. Older stored data used a single number per
-// capability; those entries are dropped rather than misread as a cell map.
-function sanitizeRatings(raw: unknown): CellRatings {
+// Keep only role → capability → rank maps; drop anything malformed.
+function sanitizeRatings(raw: unknown): Ratings {
   if (!raw || typeof raw !== "object") return {};
-  const out: CellRatings = {};
-  for (const [id, cells] of Object.entries(raw as Record<string, unknown>)) {
-    if (!cells || typeof cells !== "object") continue;
-    out[id as CompetencyId] = cells as Partial<Record<Level, Proficiency>>;
+  const out: Ratings = {};
+  for (const [role, caps] of Object.entries(raw as Record<string, unknown>)) {
+    if (!ROLES.includes(role as Role) || !caps || typeof caps !== "object") {
+      continue;
+    }
+    out[role as Role] = caps as Partial<Record<CompetencyId, Level>>;
   }
   return out;
 }
@@ -91,7 +93,7 @@ export function MatrixPage({ mode }: Props) {
     useState<CompetencyId | null>(null);
   const [hovered, setHovered] = useState<{
     id: CompetencyId;
-    level: 1 | 2 | 3 | 4;
+    ring: 1 | 2 | 3;
     anchor: DOMRect;
   } | null>(null);
 
@@ -106,31 +108,25 @@ export function MatrixPage({ mode }: Props) {
   const setRole = (role: Role) =>
     setProfile((p) => ({ ...p, selectedRole: role }));
 
-  // Cycle a cell's proficiency: unset → Developing → Meeting → Exceeding →
-  // unset. Each cell (capability × level) is tracked independently.
-  const cycleRating = (id: CompetencyId, level: Level) =>
+  // Rank a capability for the selected role: click ring k to set the ranking
+  // to k (fills rings 1..k); click the same ring again to clear it.
+  const setRating = (id: CompetencyId, ring: 1 | 2 | 3) =>
     setProfile((p) => {
-      const forCap = { ...(p.ratings[id] ?? {}) };
-      const current = forCap[level] ?? 0;
-      const next = current >= 3 ? 0 : current + 1;
-      if (next === 0) {
-        delete forCap[level];
-      } else {
-        forCap[level] = next as Proficiency;
-        // Reaching a higher level implies progression through the ones beneath
-        // it — default any unset lower level to "Meeting". Cells the user has
-        // already set are left untouched so edits stick.
-        for (let lower = 1 as Level; lower < level; lower++) {
-          if (forCap[lower] === undefined) forCap[lower] = 2;
-        }
-      }
+      const role = p.selectedRole;
+      const forRole = { ...(p.ratings[role] ?? {}) };
+      const current = forRole[id] ?? 0;
+      const next = current === ring ? 0 : ring;
+      if (next === 0) delete forRole[id];
+      else forRole[id] = next as Level;
       const ratings = { ...p.ratings };
-      if (Object.keys(forCap).length === 0) delete ratings[id];
-      else ratings[id] = forCap;
+      if (Object.keys(forRole).length === 0) delete ratings[role];
+      else ratings[role] = forRole;
       return { ...p, ratings };
     });
 
-  const setExpectation = (id: CompetencyId, level: Level) =>
+  // Set the expected ranking bar for a capability (Define mode). Click the
+  // current bar ring to clear it back to unset.
+  const setExpectation = (id: CompetencyId, ring: 1 | 2 | 3) =>
     setProfile((p) => {
       const role = p.selectedRole;
       const baseline: Record<CompetencyId, Level> = {
@@ -138,7 +134,7 @@ export function MatrixPage({ mode }: Props) {
         ...p.customExpectations?.[role],
       };
       const current = baseline[id] ?? 0;
-      const next = (current === level ? 0 : level) as Level;
+      const next = (current === ring ? 0 : ring) as Level;
       const updatedRole: Record<CompetencyId, Level> = {
         ...baseline,
         [id]: next,
@@ -152,9 +148,9 @@ export function MatrixPage({ mode }: Props) {
       };
     });
 
-  const handleCellClick = (id: CompetencyId, level: Level) => {
-    if (mode === "rate") cycleRating(id, level);
-    else setExpectation(id, level);
+  const handleCellClick = (id: CompetencyId, ring: 1 | 2 | 3) => {
+    if (mode === "rate") setRating(id, ring);
+    else setExpectation(id, ring);
   };
 
   const handleCapabilityClick = (id: CompetencyId) => {
@@ -163,10 +159,10 @@ export function MatrixPage({ mode }: Props) {
 
   const handleCellHover = (
     id: CompetencyId,
-    level: 1 | 2 | 3 | 4,
+    ring: 1 | 2 | 3,
     target: SVGPathElement,
   ) => {
-    setHovered({ id, level, anchor: target.getBoundingClientRect() });
+    setHovered({ id, ring, anchor: target.getBoundingClientRect() });
   };
   const handleCellLeave = () => setHovered(null);
 
@@ -276,7 +272,10 @@ export function MatrixPage({ mode }: Props) {
     ...ROLE_EXPECTATIONS[profile.selectedRole],
     ...profile.customExpectations?.[profile.selectedRole],
   };
-  const hasRatings = Object.keys(profile.ratings).length > 0;
+  const roleRatings = profile.ratings[profile.selectedRole] ?? {};
+  const hasRatings = Object.values(profile.ratings).some(
+    (m) => m && Object.keys(m).length > 0,
+  );
   const hasCustomDefaults =
     (!!profile.customExpectations &&
       Object.keys(profile.customExpectations).length > 0) ||
@@ -304,14 +303,13 @@ export function MatrixPage({ mode }: Props) {
   };
 
   const gaps: Gap[] = COMPETENCIES.flatMap((c) => {
-    const expectedLevel = (expectations[c.id] ?? 0) as Level;
-    if (expectedLevel === 0) return [];
-    const proficiency = profile.ratings[c.id]?.[expectedLevel];
-    // Meeting (2) or Exceeding (3) at the role's level clears the gap.
-    if (proficiency !== undefined && proficiency >= 2) return [];
-    const expectedRole = ROLES[expectedLevel - 1];
-    const expectedBullets = resolveDescriptions(c.id)[expectedRole];
-    return [{ competency: c, expectedLevel, proficiency, expectedBullets }];
+    const expectedRank = (expectations[c.id] ?? 0) as Level;
+    if (expectedRank === 0) return [];
+    const rank = (roleRatings[c.id] ?? 0) as Level;
+    // At or above the expected ranking clears the gap.
+    if (rank >= expectedRank) return [];
+    const expectedBullets = resolveDescriptions(c.id)[profile.selectedRole];
+    return [{ competency: c, expectedRank, rank, expectedBullets }];
   });
 
   const exportToday = new Date().toLocaleDateString(undefined, {
@@ -345,8 +343,8 @@ export function MatrixPage({ mode }: Props) {
             </h1>
             <p className="no-print mt-2 text-slate-600 max-w-2xl text-sm leading-relaxed">
               {mode === "define"
-                ? "Click a capability label on the wheel to edit the Junior → Lead bullet descriptions for that capability. Click cells to override the expected level per role. Changes save automatically."
-                : "Four levels (Junior, Mid, Senior, Lead) across eight capabilities. Switch roles to see expectations, click cells to rate yourself, and click a capability label to read the full ladder."}
+                ? "Pick a role tab, then click a ring to set the expected ranking (Developing → Exceeding) for each capability. Click a capability label to edit its bullet ladder. Changes save automatically."
+                : "Pick the role level from the tabs, then rank each of the eight capabilities Developing → Meeting → Exceeding by clicking its rings. Click a capability label to read the full ladder."}
             </p>
             <p className="print-only text-xs text-slate-500 mt-2">
               {ROLE_LABELS[profile.selectedRole]} · Exported {exportToday}
@@ -411,7 +409,7 @@ export function MatrixPage({ mode }: Props) {
         <div className="matrix-row grid lg:grid-cols-[1fr_280px] gap-8 items-start">
           <div className="flex justify-center">
             <CompetencyMatrix
-              ratings={profile.ratings}
+              rankings={roleRatings}
               expectations={expectations}
               centreLabel={ROLE_LABELS[profile.selectedRole]}
               mode={mode}
@@ -521,12 +519,13 @@ export function MatrixPage({ mode }: Props) {
       {hovered && (() => {
         const comp =
           COMPETENCIES.find((c) => c.id === hovered.id) ?? COMPETENCIES[0];
-        const resolved = resolveDescriptions(comp.id);
+        const bullets = resolveDescriptions(comp.id)[profile.selectedRole];
         return (
           <CellHoverCard
             competency={comp}
-            bullets={resolved[ROLES[hovered.level - 1]]}
-            level={hovered.level}
+            bullets={bullets}
+            roleLabel={ROLE_LABELS[profile.selectedRole]}
+            rankLabel={LEVEL_LABELS[hovered.ring]}
             anchor={hovered.anchor}
           />
         );

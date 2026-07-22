@@ -8,6 +8,13 @@ interface Props {
   hasCustomDefaults: boolean;
 }
 
+const RANK_FILL = [
+  "",
+  "var(--prof-developing)",
+  "var(--prof-meeting)",
+  "var(--prof-exceeding)",
+];
+
 export function Legend({
   mode,
   onResetRatings,
@@ -18,11 +25,14 @@ export function Legend({
   return (
     <div className="flex flex-col gap-5 text-sm">
       <section>
-        <h3 className="font-semibold text-slate-900 mb-2">Levels</h3>
+        <h3 className="font-semibold text-slate-900 mb-2">Ranking</h3>
         <ol className="space-y-3">
           {LEVEL_LABELS.slice(1).map((label, idx) => (
             <li key={label} className="grid grid-cols-[1rem_1fr] gap-2">
-              <span className="font-mono text-slate-400">{idx + 1}</span>
+              <span
+                className="mt-0.5 inline-block w-4 h-4 rounded-sm"
+                style={{ backgroundColor: RANK_FILL[idx + 1] }}
+              />
               <div>
                 <div className="font-semibold text-slate-900">{label}</div>
                 <p className="text-xs text-slate-600 mt-0.5 leading-snug">
@@ -36,59 +46,25 @@ export function Legend({
 
       <section>
         <h3 className="font-semibold text-slate-900 mb-2">Key</h3>
-        {mode === "rate" ? (
-          <ul className="space-y-2">
-            <li className="flex items-center gap-2">
-              <span
-                className="inline-block w-4 h-4 rounded-sm"
-                style={{ backgroundColor: "var(--prof-developing)" }}
-              />
-              <span className="text-slate-700">Developing</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span
-                className="inline-block w-4 h-4 rounded-sm"
-                style={{ backgroundColor: "var(--prof-meeting)" }}
-              />
-              <span className="text-slate-700">Meeting</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span
-                className="inline-block w-4 h-4 rounded-sm"
-                style={{ backgroundColor: "var(--prof-exceeding)" }}
-              />
-              <span className="text-slate-700">Exceeding</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span
-                className="inline-block w-4 h-1.5 rounded-sm"
-                style={{ backgroundColor: "var(--expected)" }}
-              />
-              <span className="text-slate-700">Expected for role</span>
-            </li>
-            <li className="text-slate-600 leading-snug text-xs">
-              Click a cell to cycle its proficiency; click again past Exceeding
-              to clear it.
-            </li>
-          </ul>
-        ) : (
-          <ul className="space-y-2">
-            <li className="flex items-center gap-2">
-              <span
-                className="inline-block w-4 h-4 rounded-sm"
-                style={{ backgroundColor: "var(--expected)" }}
-              />
-              <span className="text-slate-700">Expected level</span>
-            </li>
-            <li className="text-slate-600 leading-snug">
-              Click cells to set the expected level for the active role.
-            </li>
-          </ul>
-        )}
+        <ul className="space-y-2">
+          <li className="flex items-center gap-2">
+            <span
+              className="inline-block w-4 h-1.5 rounded-sm"
+              style={{ backgroundColor: "var(--expected)" }}
+            />
+            <span className="text-slate-700">Expected bar for this role</span>
+          </li>
+          <li className="text-slate-600 leading-snug text-xs">
+            {mode === "rate"
+              ? "Click a ring to rank a capability; click the same ring again to clear it."
+              : "Click a ring to set the expected ranking for the active role."}
+          </li>
+        </ul>
       </section>
 
       <p className="text-xs text-slate-500 leading-snug">
-        Click a capability label on the wheel to read its full ladder.
+        Role tabs set the position level. Click a capability label on the wheel
+        to read its full ladder.
       </p>
 
       {mode === "rate" ? (

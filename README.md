@@ -1,6 +1,6 @@
 # Product Designer Competency Matrix
 
-An interactive radial competency matrix for a Product Design team — four levels (Junior, Mid, Senior, Lead) across eight capabilities. Rate yourself, see gaps versus role expectations, export a growth plan.
+An interactive radial competency matrix for a Product Design team. Pick a position level (Junior, Mid, Senior, Lead) from the tabs, then rank each of eight capabilities Developing → Meeting → Exceeding. See gaps versus the expected bar and export a growth plan.
 
 Based on an internal Product Design Competency Matrix draft (May 2026).
 
@@ -14,14 +14,16 @@ Based on an internal Product Design Competency Matrix draft (May 2026).
 
 ## What it does
 
-- **Radial wheel** — 7 spokes × 4 rings. Click cells to set your level on each capability; the active role's bar appears as a dark target arc.
-- **Role context strip** — headline, scope, ownership, who they work with, people responsibility, indicative experience for the selected level.
+- **Radial wheel** — 8 spokes × 3 ranking rings (Developing → Meeting → Exceeding). The tabs set the position level; click a ring to rank a capability (click the same ring again to clear). The role's expected bar appears as a dark target arc (defaults to Meeting).
+- **Per-role rankings** — each tab (Junior/Mid/Senior/Lead) holds its own set of capability rankings. Switching tabs shows that position's assessment.
+- **Role context strip** — headline, scope, ownership, and who they work with for the selected level.
 - **Capability detail** — click a spoke label to open the full Junior → Lead ladder (descriptive bullets sourced from the source document).
-- **Growth plan** — capabilities where your current rating sits below the role's expectation. Capture how you have (or will) demonstrate each, and the metric it moves.
-- **Export PDF** — `window.print()` against a print stylesheet. Page 1 is the matrix; page 2 is the growth-plan table with empty (or filled-in) evidence/KPI cells.
-- **Define mode** — visit `/define` to override the per-cell expected level for a role. Defaults are uniform (a Mid expects the Mid column across every capability) but you can deviate.
+- **Manager notes** — a free-text box above the growth plan for the reviewer's overall assessment.
+- **Growth plan** — capabilities ranked below the expected bar for the selected role. Capture how you have (or will) demonstrate each, and the metric it moves.
+- **Export PDF** — `window.print()` against a print stylesheet. Page 1 is the matrix; page 2 is the manager notes and growth-plan table.
+- **Define mode** — visit `/define` to override the expected ranking per capability per role. The default bar is Meeting for every capability.
 
-State (ratings, custom definitions, growth-plan notes) lives in `localStorage` under `competency-matrix:v2`.
+State (per-role rankings, custom definitions, manager + growth-plan notes) lives in `localStorage` under `competency-matrix:v3`.
 
 ## Stack
 
@@ -62,7 +64,7 @@ All copy and the role ladder live in [`src/data.ts`](src/data.ts):
 
 - `COMPETENCIES` — the eight capabilities with subtitle, area, and Junior/Mid/Senior/Lead bullets.
 - `ROLE_META` — the four levels with their headline, scope, ownership, etc.
-- `ROLE_EXPECTATIONS` — uniform-per-role by default. Override in-app via `/define` or edit here directly.
+- `ROLE_EXPECTATIONS` — the expected ranking bar per capability per role; defaults to Meeting everywhere. Override in-app via `/define` or edit here directly.
 - `DEFINITIONS` — the glossary printed below the matrix.
 
 Add or remove a capability and the wheel adapts automatically (geometry is parameterised in `geometry.ts` by `SECTORS` / `RINGS`).

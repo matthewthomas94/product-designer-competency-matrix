@@ -4,7 +4,6 @@ import type {
   RoleMeta,
   Role,
 } from "./types";
-import { roleLevel } from "./types";
 
 export const ROLE_META: Record<Role, RoleMeta> = {
   junior: {
@@ -317,25 +316,26 @@ export const DEFINITIONS: import("./types").Definition[] = [
   },
 ];
 
-// Default expectations are uniform per role: a Mid is expected at the Mid
-// column across every capability. Users can override per-cell in Define mode.
-function uniform(role: Role): Record<import("./types").CompetencyId, import("./types").Level> {
-  const level = roleLevel(role);
+// The bar for every capability defaults to "Meeting" (rank 2) for every role.
+// Managers can raise or lower the expected ranking per capability per role in
+// Define mode.
+const MEETING = 2 as const;
+function uniform(): Record<import("./types").CompetencyId, import("./types").Level> {
   return {
-    "design-craft": level,
-    "research-insights": level,
-    "tooling": level,
-    "commercial-thinking": level,
-    "delivery": level,
-    "collaboration-communication": level,
-    "stakeholder-management": level,
-    "mentorship-leadership": level,
+    "design-craft": MEETING,
+    "research-insights": MEETING,
+    "tooling": MEETING,
+    "commercial-thinking": MEETING,
+    "delivery": MEETING,
+    "collaboration-communication": MEETING,
+    "stakeholder-management": MEETING,
+    "mentorship-leadership": MEETING,
   };
 }
 
 export const ROLE_EXPECTATIONS: RoleExpectations = {
-  junior: uniform("junior"),
-  mid: uniform("mid"),
-  senior: uniform("senior"),
-  lead: uniform("lead"),
+  junior: uniform(),
+  mid: uniform(),
+  senior: uniform(),
+  lead: uniform(),
 };

@@ -1,4 +1,7 @@
-export type Level = 0 | 1 | 2 | 3 | 4;
+// A capability's ranking for the selected role: 0 unset, 1 Developing,
+// 2 Meeting, 3 Exceeding. The wheel's three rings map to 1–3; the position
+// level comes from the selected role tab, not from the rings.
+export type Level = 0 | 1 | 2 | 3;
 
 export type Role = "junior" | "mid" | "senior" | "lead";
 
@@ -11,28 +14,19 @@ export const ROLE_LABELS: Record<Role, string> = {
   lead: "Lead",
 };
 
-// Role at index N corresponds to ring level N+1. A Junior is ring 1; a Lead
-// is ring 4. The mapping is used for both the role pill and the default
-// expectations (uniform per role).
-export function roleLevel(role: Role): Level {
-  return (ROLES.indexOf(role) + 1) as Level;
-}
-
 export const LEVEL_LABELS = [
   "Unset",
-  "Junior",
-  "Mid",
-  "Senior",
-  "Lead",
+  "Developing",
+  "Meeting",
+  "Exceeding",
 ] as const;
 
-// Headline characterisation per level — used in the legend.
+// Characterisation per ranking — used in the legend.
 export const LEVEL_DESCRIPTIONS = [
   "",
-  "Learn & contribute. Supported by senior designers; works on bounded tasks.",
-  "Deliver & explore. Independent on projects within a cross-functional pod.",
-  "Guide & drive impact. Owns multiple projects in a domain; mentors others.",
-  "Complexity & strategy. Owns the domain end-to-end; design DRI.",
+  "Building towards the bar for this level.",
+  "Meeting the bar expected for this level.",
+  "Consistently exceeding the bar for this level.",
 ] as const;
 
 export type Area = "craft" | "outcomes" | "people";
@@ -80,27 +74,10 @@ export type RoleExpectations = Record<Role, Record<CompetencyId, Level>>;
 
 export type Mode = "rate" | "define";
 
-// How proficient someone is at a given capability *for a given level* (ring).
-// Cycled by repeated clicks on a cell; absent = unset (grey).
-export type Proficiency = 1 | 2 | 3;
-
-export const PROFICIENCY_LABELS: Record<Proficiency, string> = {
-  1: "Developing",
-  2: "Meeting",
-  3: "Exceeding",
-};
-
-export const PROFICIENCY_DESCRIPTIONS: Record<Proficiency, string> = {
-  1: "Building towards the bar at this level.",
-  2: "Meeting the bar for this level.",
-  3: "Consistently exceeding the bar for this level.",
-};
-
-// Per-cell ratings: for each capability, an optional proficiency at each
-// level (ring). A capability with no entry — or a level with no entry — is
-// unset.
-export type CellRatings = Partial<
-  Record<CompetencyId, Partial<Record<Level, Proficiency>>>
+// Ratings are scoped per role (position level): for each role, each capability
+// can hold a ranking (1 Developing / 2 Meeting / 3 Exceeding). Absent = unset.
+export type Ratings = Partial<
+  Record<Role, Partial<Record<CompetencyId, Level>>>
 >;
 
 export interface GapNote {
@@ -119,7 +96,7 @@ export type CustomDescriptions = Partial<
 
 export interface UserProfile {
   selectedRole: Role;
-  ratings: CellRatings;
+  ratings: Ratings;
   customExpectations?: Partial<Record<Role, Record<CompetencyId, Level>>>;
   // Free-text notes the user enters against each gap capability — used to
   // fill in the Growth Plan table for export.

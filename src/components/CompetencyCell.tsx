@@ -1,20 +1,23 @@
 import type { KeyboardEvent, MouseEvent } from "react";
-import type { Level, Mode, Proficiency } from "../types";
-import { PROFICIENCY_LABELS, ROLE_LABELS, ROLES } from "../types";
+import type { Level, Mode } from "../types";
+import { LEVEL_LABELS } from "../types";
 
 interface Props {
   d: string;
   competencyLabel: string;
-  level: 1 | 2 | 3 | 4;
-  proficiency?: Proficiency;
-  expectedLevel: Level;
+  ring: 1 | 2 | 3;
+  // The capability's current ranking for the selected role (rate mode).
+  rank: Level;
+  // The expected ranking bar for the selected role (define mode + hint).
+  expectedRank: Level;
   mode: Mode;
   onClick: () => void;
   onHover?: (target: SVGPathElement) => void;
   onLeave?: () => void;
 }
 
-const PROFICIENCY_FILL: Record<Proficiency, string> = {
+// Each ring carries its own shade: Developing → Meeting → Exceeding.
+const RING_FILL: Record<1 | 2 | 3, string> = {
   1: "var(--prof-developing)",
   2: "var(--prof-meeting)",
   3: "var(--prof-exceeding)",
@@ -23,9 +26,9 @@ const PROFICIENCY_FILL: Record<Proficiency, string> = {
 export function CompetencyCell({
   d,
   competencyLabel,
-  level,
-  proficiency,
-  expectedLevel,
+  ring,
+  rank,
+  expectedRank,
   mode,
   onClick,
   onHover,
@@ -35,23 +38,25 @@ export function CompetencyCell({
   let fillOpacity = 1;
   let titleSuffix: string;
 
+  const ringLabel = LEVEL_LABELS[ring];
+
   if (mode === "rate") {
-    const levelLabel = ROLE_LABELS[ROLES[level - 1]];
-    if (proficiency) {
-      fill = PROFICIENCY_FILL[proficiency];
-      titleSuffix = `${levelLabel}: ${PROFICIENCY_LABELS[proficiency]} (click to cycle)`;
-    } else {
-      titleSuffix = `${levelLabel}: not set (click to set Developing)`;
-    }
+    const filled = rank >= ring;
+    if (filled) fill = RING_FILL[ring];
+    titleSuffix =
+      rank === ring
+        ? `${ringLabel} (click to clear)`
+        : `set to ${ringLabel}`;
   } else {
-    const expectedFilled = expectedLevel >= level;
+    const expectedFilled = expectedRank >= ring;
     if (expectedFilled) {
       fill = "var(--expected)";
-      fillOpacity = 0.5 + (level - 1) * 0.15;
+      fillOpacity = 0.5 + (ring - 1) * 0.2;
     }
-    titleSuffix = expectedFilled
-      ? `expected level ${level} (click to unset)`
-      : `set expected to level ${level}`;
+    titleSuffix =
+      expectedRank === ring
+        ? `expected: ${ringLabel} (click to clear)`
+        : `set expected to ${ringLabel}`;
   }
 
   const handleKey = (e: KeyboardEvent<SVGPathElement>) => {

@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import type { CellRatings, CompetencyId, Level, Mode } from "../types";
+import type { CompetencyId, Level, Mode } from "../types";
 import { COMPETENCIES } from "../data";
 import {
   CX,
@@ -14,23 +14,24 @@ import {
 import { CompetencyCell } from "./CompetencyCell";
 
 interface Props {
-  ratings: CellRatings;
+  // The selected role's ranking per capability (1 Developing … 3 Exceeding).
+  rankings: Partial<Record<CompetencyId, Level>>;
   expectations: Record<CompetencyId, Level>;
   centreLabel: string;
   mode: Mode;
-  onCellClick: (id: CompetencyId, level: Level) => void;
+  onCellClick: (id: CompetencyId, ring: 1 | 2 | 3) => void;
   onCapabilityClick: (id: CompetencyId) => void;
   selectedCapabilityId?: CompetencyId | null;
   onCellHover?: (
     id: CompetencyId,
-    level: 1 | 2 | 3 | 4,
+    ring: 1 | 2 | 3,
     target: SVGPathElement,
   ) => void;
   onCellLeave?: () => void;
 }
 
 export function CompetencyMatrix({
-  ratings,
+  rankings,
   expectations,
   centreLabel,
   mode,
@@ -47,24 +48,24 @@ export function CompetencyMatrix({
       role="img"
       aria-label="Product Designer Competency Matrix"
     >
-      {/* Cells: one capability per sector × 4 rings. */}
+      {/* Cells: one capability per sector × 3 ranking rings. */}
       {COMPETENCIES.map((comp, i) => {
-        const cellRatings = ratings[comp.id] ?? {};
-        const expectedLevel = expectations[comp.id] ?? 0;
+        const rank = (rankings[comp.id] ?? 0) as Level;
+        const expectedRank = (expectations[comp.id] ?? 0) as Level;
         return (
           <Fragment key={`cells-${comp.id}`}>
             {Array.from({ length: RINGS }, (_, k0) => {
-              const k = (k0 + 1) as 1 | 2 | 3 | 4;
+              const k = (k0 + 1) as 1 | 2 | 3;
               return (
                 <CompetencyCell
                   key={`${comp.id}-${k}`}
                   d={cellPath(i, k)}
                   competencyLabel={comp.label}
-                  level={k}
-                  proficiency={cellRatings[k]}
-                  expectedLevel={expectedLevel as Level}
+                  ring={k}
+                  rank={rank}
+                  expectedRank={expectedRank}
                   mode={mode}
-                  onClick={() => onCellClick(comp.id, k as Level)}
+                  onClick={() => onCellClick(comp.id, k)}
                   onHover={
                     onCellHover
                       ? (target) => onCellHover(comp.id, k, target)
@@ -78,16 +79,17 @@ export function CompetencyMatrix({
         );
       })}
 
-      {/* Target arcs — Rate mode only; in Define mode the dark fill conveys
-          the expected shape directly. */}
+      {/* Expected-bar arc — Rate mode only; marks the ranking expected for the
+          selected role (defaults to Meeting). In Define mode the dark fill
+          conveys the expected shape directly. */}
       {mode === "rate" &&
         COMPETENCIES.map((comp, i) => {
-          const expectedLevel = expectations[comp.id] ?? 0;
-          if (expectedLevel === 0) return null;
+          const expectedRank = expectations[comp.id] ?? 0;
+          if (expectedRank === 0) return null;
           return (
             <path
               key={`target-${comp.id}`}
-              d={targetArcPath(i, expectedLevel)}
+              d={targetArcPath(i, expectedRank)}
               stroke="var(--expected)"
               strokeWidth={3}
               strokeLinecap="butt"
